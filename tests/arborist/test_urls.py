@@ -25,6 +25,42 @@ async def test_get_resource_call(arborist_client, mock_arborist_request, use_asy
         timeout=10,
     )
 
+async def test_delete_resource_call(arborist_client, mock_arborist_request, use_async):
+    mock_delete = mock_arborist_request({"/resource/a/b/c": {"DELETE": (204, None)}})
+    if use_async:
+        assert await arborist_client.delete_resource("/a/b/c") == True
+    else:
+        assert arborist_client.delete_resource("/a/b/c") == True
+    mock_delete.assert_called_with(
+        "delete",
+        arborist_client._base_url + "/resource/a/b/c",
+        timeout=10,
+    )
+async def test_delete_resource_call_404_response(arborist_client, mock_arborist_request, use_async):
+    mock_delete = mock_arborist_request({"/resource/a/b/c": {"DELETE": (404, "this is the 404 response")}})
+    if use_async:
+        assert await arborist_client.delete_resource("/a/b/c") == True
+    else:
+        assert arborist_client.delete_resource("/a/b/c") == True
+    mock_delete.assert_called_with(
+        "delete",
+        arborist_client._base_url + "/resource/a/b/c",
+        timeout=10,
+    )
+async def test_delete_resource_call_other_response_code(arborist_client, mock_arborist_request, use_async):
+    mock_delete = mock_arborist_request({"/resource/a/b/c": {"DELETE": (500, "this is the other response code")}})
+    if use_async:
+        with pytest.raises(ArboristError):
+            assert await arborist_client.delete_resource("/a/b/c") == True
+    else:
+        with pytest.raises(ArboristError):
+            assert arborist_client.delete_resource("/a/b/c") == True
+    mock_delete.assert_called_with(
+        "delete",
+        arborist_client._base_url + "/resource/a/b/c",
+        timeout=10,
+    )
+
 
 async def test_list_policies_call(arborist_client, mock_arborist_request, use_async):
     mock_get = mock_arborist_request({"/policy/": {"GET": (200, {"is": 789})}})
