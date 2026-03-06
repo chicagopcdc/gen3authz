@@ -52,7 +52,11 @@ def mock_arborist_request(request, arborist_base_url, use_async):
             else:
                 code, content = response_mapping[url][method]
                 mocked_response.status_code = code
-                if isinstance(content, dict):
+                # Handle 204 No Content - calling .json() should raise ValueError
+                if code == 204:
+                    mocked_response.text = ""
+                    mocked_response.json.side_effect = ValueError("No JSON content in 204 response")
+                elif isinstance(content, dict):
                     mocked_response.json.return_value = content
                 else:
                     mocked_response.text = content
