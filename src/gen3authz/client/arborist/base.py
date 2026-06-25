@@ -1123,6 +1123,15 @@ class BaseArboristClient(AuthzClient):
         return response.code == 204
 
     @maybe_sync
+    async def get_client(self, client_id):
+        response = await self.get("/".join((self._client_url, quote(client_id))))
+        if response.code == 404:
+            return None
+        if "error" in response.json:
+            raise ArboristError(response.error_msg, response.code)
+        return response.json
+
+    @maybe_sync
     async def can_user_access_resources(
         self,
         resources: dict,
