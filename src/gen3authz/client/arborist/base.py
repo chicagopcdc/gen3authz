@@ -526,7 +526,7 @@ class BaseArboristClient(AuthzClient):
     @maybe_sync
     async def delete_resource(self, path):
         url = self._resource_url + quote(path)
-        response = await self.delete(url)
+        response = await self.delete(url, expect_json=False)
         if response.code not in [204, 404]:
             msg = "could not delete resource `{}` in arborist: {}".format(
                 path, response.error_msg
@@ -798,6 +798,22 @@ class BaseArboristClient(AuthzClient):
         return response
 
     @maybe_sync
+    async def delete_user(self, username) -> None:
+        """
+        Delete an existing user and all their access.
+
+        Args:
+            username (str): user to delete
+        """
+        url = self._user_url + "/{}".format(quote(username))
+        response = await self.delete(url, expect_json=False)
+        if response.code != 204:
+            self.logger.error(
+                "could not delete user `{}`: {}".format(username, response.error_msg)
+            )
+            raise ArboristError(response.error_msg, response.code)
+
+    @maybe_sync
     async def list_resources_for_user(self, username):
         """
         Args:
@@ -844,8 +860,8 @@ class BaseArboristClient(AuthzClient):
         response = await self.delete(url, expect_json=False)
         if response.code != 204:
             self.logger.error(
-                "could not revoke policies from user `{}`: {}`".format(
-                    username, response.error_msg
+                "could not revoke policy `{}` from user `{}`: {}`".format(
+                    policy_id, username, response.error_msg
                 )
             )
             return None
@@ -1021,6 +1037,7 @@ class BaseArboristClient(AuthzClient):
         user_json = {"name": username}
         response = await self.post(self._user_url, json=user_json)
         if response.code == 409:
+            self.logger.info("user `{}` already exists".format(username))
             return None
         if "error" in response.json:
             msg = "could not create user `{}` in arborist: {}".format(
