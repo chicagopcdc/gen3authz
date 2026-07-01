@@ -1086,7 +1086,7 @@ class BaseArboristClient(AuthzClient):
         url = "/".join((self._client_url, quote(client_id), "policy"))
         if current_policies.difference(policies):
             # if some policies must be removed, revoke all and re-grant later
-            response = await self.delete(url)
+            response = await self.delete(url, expect_json=False)
             if response.code != 204:
                 msg = (
                     "could not revoke policies "
@@ -1121,6 +1121,15 @@ class BaseArboristClient(AuthzClient):
         )
         self.logger.info("deleted client {}".format(client_id))
         return response.code == 204
+
+    @maybe_sync
+    async def get_client(self, client_id):
+        response = await self.get("/".join((self._client_url, quote(client_id))))
+        if response.code == 404:
+            return None
+        if "error" in response.json:
+            raise ArboristError(response.error_msg, response.code)
+        return response.json
 
     @maybe_sync
     async def can_user_access_resources(
