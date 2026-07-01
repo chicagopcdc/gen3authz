@@ -110,7 +110,6 @@ async def test_create_resource_call(arborist_client, mock_arborist_request, use_
         timeout=10,
     )
 
-
 async def test_list_clients_call(arborist_client, mock_arborist_request, use_async):
     payload = {"clients": [{"id": "client-a"}]}
     mock_get = mock_arborist_request({"/client": {"GET": (200, payload)}})
@@ -126,7 +125,6 @@ async def test_list_clients_call(arborist_client, mock_arborist_request, use_asy
         timeout=10,
     )
 
-
 async def test_list_clients_raises_on_error_response(
     arborist_client, mock_arborist_request, use_async
 ):
@@ -140,6 +138,68 @@ async def test_list_clients_raises_on_error_response(
     mock_get.assert_called_with(
         "get",
         arborist_client._base_url + "/client",
+        follow_redirects=True,
+        params=None,
+        timeout=10,
+    )
+
+async def test_get_client_call(arborist_client, mock_arborist_request, use_async):
+    client_id = "client-123"
+    mock_get = mock_arborist_request(
+        {f"/client/{client_id}": {"GET": (200, {"id": client_id, "policies": []})}}
+    )
+    if use_async:
+        assert await arborist_client.get_client(client_id) == {
+            "id": client_id,
+            "policies": [],
+        }
+    else:
+        assert arborist_client.get_client(client_id) == {
+            "id": client_id,
+            "policies": [],
+        }
+    mock_get.assert_called_with(
+        "get",
+        arborist_client._base_url + f"/client/{client_id}",
+        follow_redirects=True,
+        params=None,
+        timeout=10,
+    )
+
+
+async def test_get_client_returns_none_for_404(
+    arborist_client, mock_arborist_request, use_async
+):
+    client_id = "missing-client"
+    mock_get = mock_arborist_request({f"/client/{client_id}": {"GET": (404, None)}})
+    if use_async:
+        assert await arborist_client.get_client(client_id) is None
+    else:
+        assert arborist_client.get_client(client_id) is None
+    mock_get.assert_called_with(
+        "get",
+        arborist_client._base_url + f"/client/{client_id}",
+        follow_redirects=True,
+        params=None,
+        timeout=10,
+    )
+
+async def test_get_client_raises_on_error_response(
+    arborist_client, mock_arborist_request, use_async
+):
+    client_id = "bad-client"
+    mock_get = mock_arborist_request(
+        {f"/client/{client_id}": {"GET": (500, {"error": {"message": "boom"}})}}
+    )
+    if use_async:
+        with pytest.raises(ArboristError):
+            await arborist_client.get_client(client_id)
+    else:
+        with pytest.raises(ArboristError):
+            arborist_client.get_client(client_id)
+    mock_get.assert_called_with(
+        "get",
+        arborist_client._base_url + f"/client/{client_id}",
         follow_redirects=True,
         params=None,
         timeout=10,
