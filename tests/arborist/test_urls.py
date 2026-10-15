@@ -174,6 +174,23 @@ async def test_list_resources_call(arborist_client, mock_arborist_request, use_a
     )
 
 
+async def test_list_resources_exclude(
+    arborist_client, mock_arborist_request, use_async
+):
+    mock_get = mock_arborist_request({"/resource": {"GET": (200, {"resources": []})}})
+    if use_async:
+        await arborist_client.list_resources(exclude=["/programs/pcdc"])
+    else:
+        arborist_client.list_resources(exclude=["/programs/pcdc"])
+    mock_get.assert_called_with(
+        "get",
+        arborist_client._base_url + "/resource",
+        follow_redirects=True,
+        params={"exclude": ["/programs/pcdc"]},
+        timeout=10,
+    )
+
+
 async def test_list_policies_call(arborist_client, mock_arborist_request, use_async):
     mock_get = mock_arborist_request({"/policy/": {"GET": (200, {"is": 789})}})
     if use_async:

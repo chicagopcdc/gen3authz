@@ -463,14 +463,20 @@ class BaseArboristClient(AuthzClient):
         return response.json
 
     @maybe_sync
-    async def list_resources(self):
+    async def list_resources(self, exclude=None):
         """
         Return the information for all resources in Arborist.
+
+        Args:
+            exclude (list[str], optional): resource paths whose descendants are
+                left out of the answer. The listed resource itself is kept. On a
+                very large tree, listing everything can take minutes.
 
         Return:
             dict: JSON representation of the resource
         """
-        response = await self.get(self._resource_url)
+        params = {"exclude": list(exclude)} if exclude else None
+        response = await self.get(self._resource_url, params=params)
         if response.code != 200:
             self.logger.error("could not list resources: {}".format(response.error_msg))
             raise ArboristError(response.error_msg, response.code)
